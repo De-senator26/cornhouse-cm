@@ -1,2 +1,2 @@
-﻿#!/bin/bash
-gunicorn cornhouse.wsgi:application
+#!/bin/bash
+gunicorn cornhouse.wsgi:application --threads 4
