@@ -1,0 +1,102 @@
+﻿{% extends 'web/base.html' %}
+
+{% block title %}Knowledge Hub – CornHouse{% endblock %}
+
+{% block content %}
+<h1 class="mb-4" style="color: var(--dark-green);">📚 Knowledge Hub</h1>
+<p class="lead">Practical tips and articles to help you grow more, lose less, and earn better.</p>
+
+<!-- Search & Filter -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <input type="text" id="searchInput" class="form-control" placeholder="Search articles..." onkeyup="filterArticles()">
+    </div>
+    <div class="col-md-6">
+        <select id="categoryFilter" class="form-select" onchange="filterArticles()">
+            <option value="">All Categories</option>
+            <!-- populated by JavaScript from /api/knowledge/categories/ -->
+        </select>
+    </div>
+</div>
+
+<!-- Article list -->
+<div id="article-list" class="row">
+    <p class="text-muted">Loading articles...</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let allArticles = [];
+    let categoryMap = {};
+
+    // Fetch categories first
+    fetch('/api/knowledge/categories/')
+        .then(res => res.json())
+        .then(data => {
+            const select = document.getElementById('categoryFilter');
+            const categories = data.results || data;
+            categories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat.name;
+                opt.textContent = cat.name;
+                select.appendChild(opt);
+                categoryMap[cat.name] = cat.id;
+            });
+        })
+        .catch(err => console.error('Error loading categories:', err));
+
+    // Fetch articles
+    function fetchArticles() {
+        fetch('/api/knowledge/articles/')
+            .then(res => res.json())
+            .then(data => {
+                allArticles = data.results || [];
+                renderArticles(allArticles);
+            })
+            .catch(err => {
+                document.getElementById('article-list').innerHTML = '<p class="text-danger">Error loading articles.</p>';
+            });
+    }
+
+    function renderArticles(articles) {
+        const container = document.getElementById('article-list');
+        if (articles.length === 0) {
+            container.innerHTML = '<p class="text-muted">No articles found.</p>';
+            return;
+        }
+        let html = '';
+        articles.forEach(a => {
+            html += `
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">${a.title}</h5>
+                            <p class="card-text text-muted small">${a.category_name || 'Uncategorized'}</p>
+                            <p class="card-text">${a.content.substring(0, 120)}${a.content.length > 120 ? '...' : ''}</p>
+                            <a href="/knowledge/${a.id}/" class="btn btn-primary btn-sm">Read More</a>
+                        </div>
+                        <div class="card-footer text-muted small">
+                            Published: ${new Date(a.published_at).toLocaleDateString()}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    function filterArticles() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const category = document.getElementById('categoryFilter').value;
+        const filtered = allArticles.filter(a => {
+            const matchSearch = a.title.toLowerCase().includes(search) || a.content.toLowerCase().includes(search);
+            const matchCategory = category === '' || a.category_name === category;
+            return matchSearch && matchCategory;
+        });
+        renderArticles(filtered);
+    }
+
+    fetchArticles();
+</script>
+{% endblock %}

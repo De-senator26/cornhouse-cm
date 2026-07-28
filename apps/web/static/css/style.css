@@ -1,0 +1,90 @@
+/* CornHouse Color Palette */
+:root {
+    --primary-gold: #F5A623;
+    --dark-green: #2E7D32;
+    --light-green: #C8E6C9;
+    --cream: #FDFBF7;
+    --dark-gray: #333333;
+}
+
+body {
+    background-color: var(--cream);
+    color: var(--dark-gray);
+    font-family: 'Inter', sans-serif;
+}
+
+.navbar-custom {
+    background-color: var(--dark-green);
+}
+
+.navbar-custom .navbar-brand,
+.navbar-custom .nav-link {
+    color: white !important;
+}
+
+.btn-primary {
+    background-color: var(--primary-gold);
+    border-color: var(--primary-gold);
+    color: var(--dark-gray);
+}
+.btn-primary:hover {
+    background-color: #e09500;
+    border-color: #e09500;
+}
+
+.btn-success {
+    background-color: var(--dark-green);
+    border-color: var(--dark-green);
+}
+
+.card-custom {
+    border-left: 4px solid var(--primary-gold);
+}
+
+.footer-custom {
+    background-color: var(--dark-green);
+    color: white;
+}
+/* Responsive tweaks */
+@media (max-width: 576px) {
+    .card-header {
+        font-size: 0.9rem;
+        flex-wrap: wrap;
+    }
+    .card-header .btn {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+    .list-group-item {
+        font-size: 0.9rem;
+        flex-wrap: wrap;
+    }
+    .list-group-item img {
+        width: 40px !important;
+        height: 40px !important;
+    }
+    .modal-body .form-control {
+        font-size: 1rem; /* prevent zoom on iOS */
+    }
+}
+
+/* Footer */
+.footer-custom {
+    background-color: var(--dark-green);
+    color: white;
+}
+.footer-custom a:hover {
+    text-decoration: underline !important;
+    color: var(--primary-gold) !important;
+}
+.footer-custom hr {
+    opacity: 0.3;
+}
+@media (max-width: 576px) {
+    .footer-custom .row {
+        text-align: center;
+    }
+    .footer-custom .social-icons {
+        justify-content: center;
+    }
+}

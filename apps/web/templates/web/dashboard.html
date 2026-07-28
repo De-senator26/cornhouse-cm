@@ -1,0 +1,511 @@
+﻿{% extends 'web/base.html' %}
+
+{% block title %}Dashboard – CornHouse{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">👋 Welcome, {{ request.session.user }}</h2>
+<p class="text-muted">Role: <strong>{{ role|capfirst }}</strong></p>
+
+<div class="row">
+    <!-- ======================== FARMER SECTIONS ======================== -->
+    {% if role == 'farmer' %}
+    <div class="col-12 col-md-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center flex-wrap">
+                <span>My Harvests</span>
+                <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#harvestModal">+ Add</button>
+            </div>
+            <div class="card-body" id="harvest-list"><p class="text-muted">Loading...</p></div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center flex-wrap">
+                <span>My Listings</span>
+                <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#listingModal">+ Add</button>
+            </div>
+            <div class="card-body" id="listing-list"><p class="text-muted">Loading...</p></div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center flex-wrap">
+                <span>My Grants</span>
+                <button class="btn btn-sm btn-dark" data-bs-toggle="modal" data-bs-target="#grantModal">+ Apply</button>
+            </div>
+            <div class="card-body" id="grant-list"><p class="text-muted">Loading...</p></div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center flex-wrap">
+                <span>Offers Received</span>
+                <span class="badge bg-light text-dark" id="offer-count">0</span>
+            </div>
+            <div class="card-body" id="farmer-offers"><p class="text-muted">Loading...</p></div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ======================== BUYER SECTIONS ======================== -->
+    {% if role == 'buyer' %}
+    <div class="col-12">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center flex-wrap">
+                <span>Available Listings</span>
+                <span class="badge bg-light text-dark" id="listing-count">0</span>
+            </div>
+            <div class="card-body" id="available-listings"><p class="text-muted">Loading...</p></div>
+        </div>
+    </div>
+    <div class="col-12">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center flex-wrap">
+                <span>My Offers</span>
+                <span class="badge bg-light text-dark" id="offer-count">0</span>
+            </div>
+            <div class="card-body" id="offer-list"><p class="text-muted">Loading...</p></div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ======================== PARTNER SECTIONS ======================== -->
+    {% if role == 'partner' %}
+    <div class="col-12 col-md-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center flex-wrap">
+                <span>Grants to Review</span>
+                <span class="badge bg-dark text-white" id="grant-review-count">0</span>
+            </div>
+            <div class="card-body" id="grants-review"><p class="text-muted">Loading...</p></div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white">Impact Metrics</div>
+            <div class="card-body" id="impact-metrics"><p class="text-muted">Loading...</p></div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ======================== ADMIN SECTIONS ======================== -->
+    {% if role == 'admin' %}
+    <div class="col-12 col-md-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-danger text-white">All Users</div>
+            <div class="card-body" id="admin-users"><p class="text-muted">Loading...</p></div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-success text-white">All Harvests</div>
+            <div class="card-body" id="admin-harvests"><p class="text-muted">Loading...</p></div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">All Listings</div>
+            <div class="card-body" id="admin-listings"><p class="text-muted">Loading...</p></div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="mt-4 d-flex flex-wrap gap-2">
+    <a href="/admin/" class="btn btn-outline-secondary">Admin Panel</a>
+    <a href="/logout/" class="btn btn-outline-danger">Logout</a>
+</div>
+
+<!-- ========== MODALS (unchanged) ========== -->
+<!-- Harvest Modal -->
+<div class="modal fade" id="harvestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">🌾 Add Harvest</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="harvestForm">
+                    <div class="mb-2">
+                        <label>Quantity (kg)</label>
+                        <input type="number" step="0.01" class="form-control" id="harvest_qty" required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Harvest Date</label>
+                        <input type="date" class="form-control" id="harvest_date" required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Storage Method (ID)</label>
+                        <input type="number" class="form-control" id="harvest_storage" placeholder="1=Hermetic bag, 2=Silo, etc." required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Moisture Content (%)</label>
+                        <input type="number" step="0.01" class="form-control" id="harvest_moisture" placeholder="Optional">
+                    </div>
+                    <div class="mb-2">
+                        <label>Quality Grade</label>
+                        <input type="text" class="form-control" id="harvest_grade" placeholder="A, B, or C">
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Save Harvest</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Listing Modal -->
+<div class="modal fade" id="listingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">📦 Add Listing</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="listingForm" enctype="multipart/form-data">
+                    <div class="mb-2">
+                        <label>Quantity (kg)</label>
+                        <input type="number" step="0.01" class="form-control" id="listing_qty" required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Price per kg (XAF)</label>
+                        <input type="number" step="0.01" class="form-control" id="listing_price" required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Quality Description</label>
+                        <input type="text" class="form-control" id="listing_desc" placeholder="e.g., Grade A, 14% moisture">
+                    </div>
+                    <div class="mb-2">
+                        <label>Available Until</label>
+                        <input type="date" class="form-control" id="listing_available" required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Product Image</label>
+                        <input type="file" class="form-control" id="listing_image" accept="image/*">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Create Listing</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Grant Modal -->
+<div class="modal fade" id="grantModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">💰 Apply for Grant</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="grantForm">
+                    <div class="mb-2">
+                        <label>Amount Requested (XAF)</label>
+                        <input type="number" step="0.01" class="form-control" id="grant_amount" required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Purpose</label>
+                        <textarea class="form-control" id="grant_purpose" rows="2" placeholder="What will you use the grant for?" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100">Submit Application</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Offer Modal -->
+<div class="modal fade" id="offerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">📝 Make an Offer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="offerForm">
+                    <input type="hidden" id="offer_listing_id">
+                    <div class="mb-2">
+                        <label>Your Offered Price (XAF/kg)</label>
+                        <input type="number" step="0.01" class="form-control" id="offer_price" required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Quantity (kg)</label>
+                        <input type="number" step="0.01" class="form-control" id="offer_qty" required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Message (optional)</label>
+                        <textarea class="form-control" id="offer_message" rows="2"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Send Offer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const token = "{{ token }}";
+    const role = "{{ role }}";
+    const userId = {{ user_id|default:'null' }};
+    const headers = { "Authorization": "Bearer " + token };
+
+    // ===== Generic fetch helper =====
+    function fetchData(url, containerId, itemRenderer) {
+        fetch(url, { headers })
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById(containerId);
+                const items = data.results || data;
+                if (Array.isArray(items) && items.length > 0) {
+                    let html = '<ul class="list-group">';
+                    items.forEach(item => {
+                        html += `<li class="list-group-item d-flex flex-wrap align-items-center gap-2">${itemRenderer(item)}</li>`;
+                    });
+                    html += '</ul>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p class="text-muted">No data found.</p>';
+                }
+            })
+            .catch(() => {
+                document.getElementById(containerId).innerHTML = '<p class="text-danger">Error loading data.</p>';
+            });
+    }
+
+    // ===== Update status helpers =====
+    function updateOfferStatus(offerId, status) {
+        if (!confirm(`Are you sure you want to ${status} this offer?`)) return;
+        fetch(`/api/marketplace/offers/${offerId}/`, {
+            method: 'PATCH',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: status })
+        })
+        .then(res => res.json())
+        .then(() => {
+            if (role === 'farmer') refreshFarmerData();
+            else if (role === 'buyer') refreshBuyerData();
+        })
+        .catch(err => alert('Error updating offer: ' + err));
+    }
+
+    function updateGrantStatus(grantId, status) {
+        if (!confirm(`Are you sure you want to ${status} this grant?`)) return;
+        fetch(`/api/finance/grants/${grantId}/`, {
+            method: 'PATCH',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: status })
+        })
+        .then(res => res.json())
+        .then(() => {
+            if (role === 'partner') refreshPartnerData();
+        })
+        .catch(err => alert('Error updating grant: ' + err));
+    }
+
+    // ===== Data refresh functions =====
+    function refreshFarmerData() {
+        fetchData(`/api/harvests/harvests/?farmer=${userId}`, 'harvest-list',
+            h => `${h.quantity_kg} kg - ${h.harvest_date} (${h.quality_grade || 'N/A'})`
+        );
+        fetchData(`/api/marketplace/listings/?farmer=${userId}`, 'listing-list',
+            l => {
+                let img = l.image ? `<img src="${l.image}" class="img-fluid rounded" style="width:50px;height:50px;object-fit:cover;" />` : '';
+                return `${img} ${l.quantity_kg} kg at ${l.price_per_kg} XAF/kg - ${l.is_active ? 'Active' : 'Inactive'}`;
+            }
+        );
+        fetchData(`/api/finance/grants/?farmer=${userId}`, 'grant-list',
+            g => `${g.amount_requested} XAF - ${g.status}`
+        );
+        fetchData(`/api/marketplace/offers/?listing__farmer=${userId}`, 'farmer-offers',
+            o => {
+                let actions = '';
+                if (o.status === 'pending') {
+                    actions = `
+                        <button class="btn btn-sm btn-success" onclick="updateOfferStatus(${o.id}, 'accepted')">Accept</button>
+                        <button class="btn btn-sm btn-danger" onclick="updateOfferStatus(${o.id}, 'rejected')">Reject</button>
+                    `;
+                }
+                return `Listing: ${o.listing} - ${o.quantity_kg} kg at ${o.offered_price} XAF/kg - Status: ${o.status} ${actions}`;
+            }
+        );
+    }
+
+    function refreshBuyerData() {
+        fetchData('/api/marketplace/listings/?is_active=true', 'available-listings',
+            l => {
+                let img = l.image ? `<img src="${l.image}" class="img-fluid rounded" style="width:50px;height:50px;object-fit:cover;" />` : '';
+                let btn = `<button class="btn btn-sm btn-primary ms-auto" onclick="openOfferModal(${l.id})">Make Offer</button>`;
+                return `<div class="d-flex flex-wrap align-items-center w-100">${img} <span class="flex-grow-1">${l.quantity_kg} kg at ${l.price_per_kg} XAF/kg - Farmer: ${l.farmer_name}</span> ${btn}</div>`;
+            }
+        );
+        fetchData(`/api/marketplace/offers/?buyer=${userId}`, 'offer-list',
+            o => `${o.quantity_kg} kg at ${o.offered_price} XAF/kg - Status: ${o.status}`
+        );
+    }
+
+    function refreshPartnerData() {
+        fetchData('/api/finance/grants/?status=pending', 'grants-review',
+            g => {
+                let actions = `
+                    <button class="btn btn-sm btn-success" onclick="updateGrantStatus(${g.id}, 'approved')">Approve</button>
+                    <button class="btn btn-sm btn-danger" onclick="updateGrantStatus(${g.id}, 'rejected')">Reject</button>
+                `;
+                return `${g.farmer_name} - ${g.amount_requested} XAF ${actions}`;
+            }
+        );
+        // Simple impact metrics (just a count of harvests and farmers)
+        Promise.all([
+            fetch('/api/harvests/harvests/', { headers }).then(r => r.json()),
+            fetch('/api/users/users/?role=farmer', { headers }).then(r => r.json())
+        ]).then(([harvestsData, farmersData]) => {
+            const harvestCount = (harvestsData.results || []).length;
+            const farmerCount = (farmersData.results || []).length;
+            document.getElementById('impact-metrics').innerHTML = `
+                <ul class="list-group">
+                    <li class="list-group-item">Total Harvests: ${harvestCount}</li>
+                    <li class="list-group-item">Total Farmers: ${farmerCount}</li>
+                </ul>
+            `;
+        }).catch(() => {
+            document.getElementById('impact-metrics').innerHTML = '<p class="text-danger">Error loading metrics.</p>';
+        });
+    }
+
+    // ===== Offer modal =====
+    window.openOfferModal = function(listingId) {
+        document.getElementById('offer_listing_id').value = listingId;
+        const modal = new bootstrap.Modal(document.getElementById('offerModal'));
+        modal.show();
+    };
+
+    document.getElementById('offerForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const listingId = document.getElementById('offer_listing_id').value;
+        const data = {
+            listing: parseInt(listingId),
+            buyer: userId,
+            offered_price: parseFloat(document.getElementById('offer_price').value),
+            quantity_kg: parseFloat(document.getElementById('offer_qty').value),
+            message: document.getElementById('offer_message').value || '',
+            status: 'pending'
+        };
+        fetch('/api/marketplace/offers/', {
+            method: 'POST',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(() => {
+            bootstrap.Modal.getInstance(document.getElementById('offerModal')).hide();
+            refreshBuyerData();
+            document.getElementById('offerForm').reset();
+        })
+        .catch(err => alert('Error making offer: ' + err));
+    });
+
+    // ===== Farmer form handlers (unchanged) =====
+    // Harvest
+    document.getElementById('harvestForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const data = {
+            farmer: userId,
+            quantity_kg: parseFloat(document.getElementById('harvest_qty').value),
+            harvest_date: document.getElementById('harvest_date').value,
+            storage_method: parseInt(document.getElementById('harvest_storage').value) || null,
+            moisture_content: parseFloat(document.getElementById('harvest_moisture').value) || null,
+            quality_grade: document.getElementById('harvest_grade').value || '',
+            is_sold: false
+        };
+        fetch('/api/harvests/harvests/', {
+            method: 'POST',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(() => {
+            bootstrap.Modal.getInstance(document.getElementById('harvestModal')).hide();
+            refreshFarmerData();
+            document.getElementById('harvestForm').reset();
+        })
+        .catch(err => alert('Error creating harvest: ' + err));
+    });
+
+    // Listing
+    document.getElementById('listingForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData();
+        formData.append('farmer', userId);
+        formData.append('quantity_kg', document.getElementById('listing_qty').value);
+        formData.append('price_per_kg', document.getElementById('listing_price').value);
+        formData.append('quality_description', document.getElementById('listing_desc').value || '');
+        formData.append('available_until', document.getElementById('listing_available').value);
+        formData.append('is_active', 'true');
+        const fileInput = document.getElementById('listing_image');
+        if (fileInput.files.length > 0) {
+            formData.append('image', fileInput.files[0]);
+        }
+        fetch('/api/marketplace/listings/', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(() => {
+            bootstrap.Modal.getInstance(document.getElementById('listingModal')).hide();
+            refreshFarmerData();
+            document.getElementById('listingForm').reset();
+        })
+        .catch(err => alert('Error creating listing: ' + err));
+    });
+
+    // Grant
+    document.getElementById('grantForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const data = {
+            farmer: userId,
+            amount_requested: parseFloat(document.getElementById('grant_amount').value),
+            purpose: document.getElementById('grant_purpose').value,
+            status: 'pending'
+        };
+        fetch('/api/finance/grants/', {
+            method: 'POST',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(() => {
+            bootstrap.Modal.getInstance(document.getElementById('grantModal')).hide();
+            refreshFarmerData();
+            document.getElementById('grantForm').reset();
+        })
+        .catch(err => alert('Error applying for grant: ' + err));
+    });
+
+    // ===== Role initialisation =====
+    if (role === 'farmer') {
+        refreshFarmerData();
+    }
+    if (role === 'buyer') {
+        refreshBuyerData();
+    }
+    if (role === 'partner') {
+        refreshPartnerData();
+    }
+    if (role === 'admin') {
+        fetchData('/api/users/users/', 'admin-users',
+            u => `${u.username} (${u.role})`
+        );
+        fetchData('/api/harvests/harvests/', 'admin-harvests',
+            h => `${h.farmer_name} - ${h.quantity_kg} kg`
+        );
+        fetchData('/api/marketplace/listings/', 'admin-listings',
+            l => `${l.farmer_name} - ${l.quantity_kg} kg at ${l.price_per_kg} XAF/kg`
+        );
+    }
+</script>
+{% endblock %}
