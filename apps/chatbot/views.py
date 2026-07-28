@@ -1,4 +1,4 @@
-﻿import google.generativeai as genai
+import google.generativeai as genai
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.conf import settings
@@ -16,7 +16,7 @@ def chat_api(request):
                 return JsonResponse({'error': 'No message provided'}, status=400)
             
             genai.configure(api_key=settings.GEMINI_API_KEY)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-3.5-flash')
             
             prompt = f"""You are an agricultural assistant for CornHouse, helping rural maize farmers in Cameroon. 
 Answer the following question in simple, clear language (English or French). If the question is not about agriculture, 
