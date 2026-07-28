@@ -11,9 +11,11 @@ def login_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
+        # Build the absolute URL for the token endpoint
+        token_url = request.build_absolute_uri('/api/token/')
         try:
             response = requests.post(
-                'http://127.0.0.1:8000/api/token/',
+                token_url,
                 data={'username': username, 'password': password},
                 timeout=5
             )
@@ -94,11 +96,12 @@ def knowledge_detail(request, article_id):
     headers = {}
     if token:
         headers = {'Authorization': f'Bearer {token}'}
-    # Try to fetch the article via API (public or private)
-    response = requests.get(f'http://127.0.0.1:8000/api/knowledge/articles/{article_id}/', headers=headers)
+    # Use relative path for API, but we need absolute URL here as well
+    # For simplicity, build absolute URL from request
+    article_url = request.build_absolute_uri(f'/api/knowledge/articles/{article_id}/')
+    response = requests.get(article_url, headers=headers)
     if response.status_code == 200:
         article = response.json()
         return render(request, 'web/knowledge_detail.html', {'article': article})
     else:
-        from django.shortcuts import redirect
         return redirect('knowledge_hub')
