@@ -11,14 +11,12 @@ def login_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
-        # Build the absolute URL for the token endpoint
+        # Build absolute URL for the token endpoint
         token_url = request.build_absolute_uri('/api/token/')
         try:
-            response = requests.post(
-                token_url,
-                data={'username': username, 'password': password},
-                timeout=5
-            )
+            # Log the URL being used (visible in Render logs)
+            print(f"Attempting login with token_url: {token_url}")
+            response = requests.post(token_url, data={'username': username, 'password': password}, timeout=10)
             if response.status_code == 200:
                 data = response.json()
                 request.session['access_token'] = data.get('access')
@@ -27,7 +25,8 @@ def login_view(request):
                 return redirect('dashboard')
             else:
                 messages.error(request, 'Invalid credentials. Please try again.')
-        except requests.exceptions.RequestException:
+        except requests.exceptions.RequestException as e:
+            print(f"Login error: {e}, attempted URL: {token_url}")
             messages.error(request, 'Could not connect to the authentication server.')
     return render(request, 'web/login.html')
 
@@ -91,13 +90,10 @@ def knowledge_hub(request):
     return render(request, 'web/knowledge_hub.html')
 
 def knowledge_detail(request, article_id):
-    import requests
     token = request.session.get('access_token')
     headers = {}
     if token:
         headers = {'Authorization': f'Bearer {token}'}
-    # Use relative path for API, but we need absolute URL here as well
-    # For simplicity, build absolute URL from request
     article_url = request.build_absolute_uri(f'/api/knowledge/articles/{article_id}/')
     response = requests.get(article_url, headers=headers)
     if response.status_code == 200:
