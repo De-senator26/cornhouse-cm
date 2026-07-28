@@ -11,11 +11,10 @@ def login_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
-        # Build absolute URL for the token endpoint
-        token_url = request.build_absolute_uri('/api/token/')
+        # Force internal URL
+        token_url = 'http://127.0.0.1:10000/api/token/'
+        print(f"Using token_url: {token_url}")  # will appear in Render logs
         try:
-            # Log the URL being used (visible in Render logs)
-            print(f"Attempting login with token_url: {token_url}")
             response = requests.post(token_url, data={'username': username, 'password': password}, timeout=10)
             if response.status_code == 200:
                 data = response.json()
@@ -94,7 +93,8 @@ def knowledge_detail(request, article_id):
     headers = {}
     if token:
         headers = {'Authorization': f'Bearer {token}'}
-    article_url = request.build_absolute_uri(f'/api/knowledge/articles/{article_id}/')
+    # Use internal URL for API calls as well
+    article_url = f'http://127.0.0.1:10000/api/knowledge/articles/{article_id}/'
     response = requests.get(article_url, headers=headers)
     if response.status_code == 200:
         article = response.json()
