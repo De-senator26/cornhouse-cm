@@ -20,6 +20,7 @@ urlpatterns = [
     path('api/marketplace/', include('apps.marketplace.urls')),
     path('api/finance/', include('apps.finance.urls')),
     path('api/knowledge/', include('apps.knowledge.urls')),
+    path('chat/', include('apps.chatbot.urls')),
 ]
 
 if settings.DEBUG:
