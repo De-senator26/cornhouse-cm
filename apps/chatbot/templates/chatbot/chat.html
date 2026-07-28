@@ -1,4 +1,4 @@
-﻿{% extends 'web/base.html' %}
+{% extends 'web/base.html' %}
 
 {% block title %}AI Agribot – CornHouse{% endblock %}
 
@@ -14,6 +14,7 @@
         <input type="text" id="user-input" class="form-control" placeholder="Type your question..." />
         <button id="send-btn" class="btn btn-primary">Send</button>
     </div>
+    {% csrf_token %}
 </div>
 {% endblock %}
 
@@ -42,9 +43,13 @@
         userInput.value = '';
         sendBtn.disabled = true;
         try {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
             const response = await fetch('/chat/api/', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
                 body: JSON.stringify({ message })
             });
             const data = await response.json();
