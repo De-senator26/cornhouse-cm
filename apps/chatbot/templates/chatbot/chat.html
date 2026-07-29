@@ -109,7 +109,7 @@
             if (data.reply) {
                 addMessage('bot', data.reply);
             } else {
-                addMessage('bot', '⚠️ Sorry, I could not process that. Please try again.');
+                addMessage('bot', '⚠️ Error: ' + (data.error || 'Unknown error. Check the server terminal.'));
             }
         } catch (error) {
             removeTypingIndicator();

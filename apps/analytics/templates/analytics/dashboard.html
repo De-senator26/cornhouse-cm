@@ -1,0 +1,147 @@
+﻿{% extends 'web/base.html' %}
+{% load static %}
+
+{% block title %}Analytics Dashboard – CornHouse{% endblock %}
+
+{% block content %}
+<h1 class="mb-4" style="color: var(--dark-green);">📊 Impact Dashboard</h1>
+<p class="lead">Real‑time metrics for partners and investors.</p>
+
+<!-- Stat cards -->
+<div class="row g-4 mb-4" id="stats-cards">
+    <div class="col-6 col-md-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Farmers</h5>
+                <p class="display-6" id="total-farmers">-</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Harvests</h5>
+                <p class="display-6" id="total-harvests">-</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Grants Disbursed</h5>
+                <p class="display-6" id="grants-disbursed">-</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Active Listings</h5>
+                <p class="display-6" id="active-listings">-</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts row -->
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">Harvests per Month</div>
+            <div class="card-body">
+                <canvas id="harvestChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-dark">Losses by Type</div>
+            <div class="card-body">
+                <canvas id="lossChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-2">
+    <div class="col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">Farmer Growth (Monthly)</div>
+            <div class="card-body">
+                <canvas id="farmerChart" height="150"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const token = "{{ token }}";
+    const headers = { "Authorization": "Bearer " + token };
+
+    // Fetch stats
+    fetch('/api/analytics/stats/', { headers })
+        .then(res => res.json())
+        .then(data => {
+            // Update stat cards
+            document.getElementById('total-farmers').textContent = data.total_farmers || 0;
+            document.getElementById('total-harvests').textContent = data.total_harvests || 0;
+            document.getElementById('grants-disbursed').textContent = (data.grants_disbursed || 0).toLocaleString() + ' XAF';
+            document.getElementById('active-listings').textContent = data.active_listings || 0;
+
+            // Harvests per month bar chart
+            const harvestCtx = document.getElementById('harvestChart').getContext('2d');
+            new Chart(harvestCtx, {
+                type: 'bar',
+                data: {
+                    labels: data.harvests_by_month.map(d => d.month),
+                    datasets: [{
+                        label: 'Harvests',
+                        data: data.harvests_by_month.map(d => d.count),
+                        backgroundColor: 'rgba(46, 125, 50, 0.6)',
+                        borderColor: 'rgba(46, 125, 50, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+
+            // Losses by type pie chart
+            const lossCtx = document.getElementById('lossChart').getContext('2d');
+            new Chart(lossCtx, {
+                type: 'pie',
+                data: {
+                    labels: data.losses_by_type.map(d => d.loss_type),
+                    datasets: [{
+                        data: data.losses_by_type.map(d => d.total_kg),
+                        backgroundColor: ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff']
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            // Farmer growth line chart
+            const farmerCtx = document.getElementById('farmerChart').getContext('2d');
+            new Chart(farmerCtx, {
+                type: 'line',
+                data: {
+                    labels: data.farmers_by_month.map(d => d.month),
+                    datasets: [{
+                        label: 'New Farmers',
+                        data: data.farmers_by_month.map(d => d.count),
+                        borderColor: '#2E7D32',
+                        tension: 0.1,
+                        fill: true,
+                        backgroundColor: 'rgba(46, 125, 50, 0.1)'
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+        })
+        .catch(err => {
+            document.getElementById('stats-cards').innerHTML = '<p class="text-danger">Error loading stats. Please refresh.</p>';
+        });
+</script>
+{% endblock %}
