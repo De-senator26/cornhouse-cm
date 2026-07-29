@@ -30,7 +30,6 @@ def chat_api(request):
             return JsonResponse({'reply': '⚠️ API key not configured. Please contact admin.'})
 
         client = genai.Client(api_key=api_key)
-        # Use a model that worked earlier (from the list)
         model_name = 'gemini-2.0-flash'
         prompt = f"""You are an agricultural assistant for CornHouse, helping rural maize farmers in Cameroon.
 Answer the following question in simple, clear language (English or French). If the question is not about agriculture,
@@ -44,7 +43,6 @@ Question: {user_message}"""
         return JsonResponse({'reply': response.text})
 
     except ClientError as e:
-        # Check if it's a quota exhaustion (429)
         if e.status_code == 429:
             logger.warning("Gemini quota exhausted.")
             return JsonResponse({
@@ -55,3 +53,9 @@ Question: {user_message}"""
     except Exception as e:
         logger.error(f"Chatbot error: {e}")
         return JsonResponse({'reply': f'⚠️ Error: {str(e)}'}, status=500)
+
+@csrf_exempt
+def clear_history(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    return JsonResponse({'status': 'cleared'})
