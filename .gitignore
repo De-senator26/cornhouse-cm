@@ -7,3 +7,9 @@ __pycache__/
 .Python
 env/
 .venv/
+
+# Local development database
+db.sqlite3
+
+# Collected static files
+staticfiles/

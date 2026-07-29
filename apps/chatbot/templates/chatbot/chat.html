@@ -3,13 +3,33 @@
 {% block title %}AI Agribot – CornHouse{% endblock %}
 
 {% block content %}
-<h1 class="mb-4" style="color: var(--dark-green);">🤖 Ask the AI Agribot</h1>
-<p class="lead">Ask any question about maize farming, storage, finance, or climate‑smart practices.</p>
+<h1 class="mb-2" style="color: var(--dark-green);">🤖 Ask the AI Agribot</h1>
+<p class="lead mb-3">Ask any question about maize farming, storage, finance, or climate‑smart practices.</p>
 
 <div class="card shadow-sm">
-    <div class="card-body" id="chat-box" style="height: 400px; overflow-y: auto; background: #f9f9f9;">
-        <div class="text-center text-muted py-4">Ask a question to get started 🌽</div>
+    <div class="card-header d-flex justify-content-between align-items-center py-2">
+        <span class="fw-semibold text-muted small">Your conversation history</span>
+        <button id="clear-btn" class="btn btn-outline-danger btn-sm">🗑 Clear chat</button>
     </div>
+
+    <div class="card-body p-0" id="chat-box"
+         style="height: 460px; overflow-y: auto; background: #f9f9f9; padding: 1rem !important;">
+
+        {% if history %}
+            {% for msg in history %}
+                <div class="d-flex mb-2">
+                    {% if msg.role == 'user' %}
+                        <div class="ms-auto bg-primary text-white p-2 rounded" style="max-width:70%; white-space:pre-wrap;">{{ msg.content }}</div>
+                    {% else %}
+                        <div class="bg-light border p-2 rounded" style="max-width:70%; white-space:pre-wrap;">{{ msg.content }}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center text-muted py-5" id="empty-hint">Ask a question to get started 🌽</div>
+        {% endif %}
+    </div>
+
     <div class="card-footer d-flex gap-2">
         <input type="text" id="user-input" class="form-control" placeholder="Type your question..." />
         <button id="send-btn" class="btn btn-primary">Send</button>
@@ -23,17 +43,49 @@
     const chatBox = document.getElementById('chat-box');
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // Scroll to bottom on load so the newest message is visible
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    function removeEmptyHint() {
+        const hint = document.getElementById('empty-hint');
+        if (hint) hint.remove();
+    }
 
     function addMessage(sender, text) {
+        removeEmptyHint();
         const div = document.createElement('div');
         div.classList.add('d-flex', 'mb-2');
+        const inner = document.createElement('div');
+        inner.style.maxWidth = '70%';
+        inner.style.whiteSpace = 'pre-wrap';
+        inner.textContent = text;   // use textContent to avoid XSS
         if (sender === 'user') {
-            div.innerHTML = `<div class="ms-auto bg-primary text-white p-2 rounded" style="max-width:70%;">${text}</div>`;
+            inner.classList.add('ms-auto', 'bg-primary', 'text-white', 'p-2', 'rounded');
         } else {
-            div.innerHTML = `<div class="bg-light p-2 rounded" style="max-width:70%;">${text}</div>`;
+            inner.classList.add('bg-light', 'border', 'p-2', 'rounded');
         }
+        div.appendChild(inner);
         chatBox.appendChild(div);
         chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function addTypingIndicator() {
+        const div = document.createElement('div');
+        div.classList.add('d-flex', 'mb-2');
+        div.id = 'typing-indicator';
+        div.innerHTML = `<div class="bg-light border p-2 rounded text-muted" style="max-width:70%;">
+            <span class="spinner-grow spinner-grow-sm me-1" role="status"></span>Thinking…
+        </div>`;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+        const el = document.getElementById('typing-indicator');
+        if (el) el.remove();
     }
 
     async function sendMessage() {
@@ -42,29 +94,42 @@
         addMessage('user', message);
         userInput.value = '';
         sendBtn.disabled = true;
+        addTypingIndicator();
         try {
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
             const response = await fetch('/chat/api/', {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': csrfToken
                 },
                 body: JSON.stringify({ message })
             });
             const data = await response.json();
+            removeTypingIndicator();
             if (data.reply) {
                 addMessage('bot', data.reply);
             } else {
                 addMessage('bot', '⚠️ Sorry, I could not process that. Please try again.');
             }
         } catch (error) {
+            removeTypingIndicator();
             addMessage('bot', '⚠️ Network error. Please try later.');
         }
         sendBtn.disabled = false;
+        userInput.focus();
+    }
+
+    async function clearHistory() {
+        if (!confirm('Delete all your chat history? This cannot be undone.')) return;
+        await fetch('/chat/clear/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+        });
+        chatBox.innerHTML = `<div class="text-center text-muted py-5" id="empty-hint">Ask a question to get started 🌽</div>`;
     }
 
     sendBtn.addEventListener('click', sendMessage);
+    clearBtn.addEventListener('click', clearHistory);
     userInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendMessage();
     });

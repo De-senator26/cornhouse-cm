@@ -77,10 +77,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'cornhouse.wsgi.application'
 
-# Database – production uses DATABASE_URL
-DATABASES = {
-    'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
-}
+# Database – production uses DATABASE_URL; local dev falls back to SQLite
+_db_url = os.getenv('DATABASE_URL')
+if _db_url:
+    DATABASES = {'default': dj_database_url.config(default=_db_url)}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
