@@ -106,14 +106,18 @@
             });
             const data = await response.json();
             removeTypingIndicator();
-            if (data.reply) {
+            if (response.ok && data.reply) {
                 addMessage('bot', data.reply);
+            } else if (data.error) {
+                addMessage('bot', '⚠️ Error: ' + data.error);
+            } else if (data.reply) {
+                addMessage('bot', '⚠️ ' + data.reply);
             } else {
-                addMessage('bot', '⚠️ Error: ' + (data.error || 'Unknown error. Check the server terminal.'));
+                addMessage('bot', '⚠️ Error: Unexpected response. Please check the server logs.');
             }
         } catch (error) {
             removeTypingIndicator();
-            addMessage('bot', '⚠️ Network error. Please try later.');
+            addMessage('bot', '⚠️ Network error. Please try later or check your connection.');
         }
         sendBtn.disabled = false;
         userInput.focus();

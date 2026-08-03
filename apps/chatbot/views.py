@@ -43,11 +43,12 @@ Question: {user_message}"""
         return JsonResponse({'reply': response.text})
 
     except ClientError as e:
-        if e.status_code == 429:
+        status_code = getattr(e, 'status', None)
+        if status_code == 429:
             logger.warning("Gemini quota exhausted.")
             return JsonResponse({
-                'reply': '🌽 I\'m currently unavailable due to high demand. Please try again later, or check our Knowledge Hub for farming tips!'
-            })
+                'reply': '🌽 Sorry, Gemini quota is exhausted. Please check your Google AI billing and quota, or try again later.'
+            }, status=429)
         logger.error(f"Gemini ClientError: {e}")
         return JsonResponse({'reply': f'⚠️ AI service error: {str(e)}'}, status=500)
     except Exception as e:
