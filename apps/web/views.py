@@ -1,14 +1,19 @@
 ﻿"""Views for the CornHouse web frontend."""
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.contrib.auth import authenticate, login
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import DatabaseError
 from django.conf import settings
 import requests
 from apps.users.models import User
 
 def home(request):
+    """Render the CornHouse home page."""
     return render(request, 'web/home.html')
 
 def login_view(request):
+    """Authenticate the user and store JWT tokens in session."""
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -24,6 +29,9 @@ def login_view(request):
                 request.session['access_token'] = data.get('access')
                 request.session['refresh_token'] = data.get('refresh')
                 request.session['user'] = username
+                user = authenticate(request, username=username, password=password)
+                if user is not None:
+                    login(request, user)
                 return redirect('dashboard')
             else:
                 messages.error(request, 'Invalid credentials. Please try again.')
@@ -33,10 +41,12 @@ def login_view(request):
     return render(request, 'web/login.html')
 
 def logout_view(request):
+    """Clear session and redirect to the home page."""
     request.session.flush()
     return redirect('home')
 
 def dashboard(request):
+    """Render the authenticated user dashboard."""
     token = request.session.get('access_token')
     if not token:
         return redirect('login')
@@ -45,12 +55,13 @@ def dashboard(request):
         user = User.objects.get(username=username)
         role = user.role
         user_id = user.id
-    except User.DoesNotExist:
+    except ObjectDoesNotExist:
         role = 'farmer'
         user_id = None
     return render(request, 'web/dashboard.html', {'token': token, 'role': role, 'user_id': user_id})
 
 def register_view(request):
+    """Handle new user registration."""
     if request.method == 'POST':
         username = request.POST.get('username')
         email = request.POST.get('email')
@@ -82,16 +93,18 @@ def register_view(request):
             )
             messages.success(request, "Account created! Please log in.")
             return redirect('login')
-        except Exception as e:
-            messages.error(request, f"Error: {str(e)}")
+        except DatabaseError as e:
+            messages.error(request, f"Database error: {str(e)}")
             return render(request, 'web/register.html')
 
     return render(request, 'web/register.html')
 
 def knowledge_hub(request):
+    """Render the knowledge hub page."""
     return render(request, 'web/knowledge_hub.html')
 
 def knowledge_detail(request, article_id):
+    """Render a single knowledge article detail page."""
     token = request.session.get('access_token')
     headers = {}
     if token:
@@ -100,7 +113,7 @@ def knowledge_detail(request, article_id):
         article_url = request.build_absolute_uri(f'/api/knowledge/articles/{article_id}/')
     else:
         article_url = f'http://127.0.0.1:10000/api/knowledge/articles/{article_id}/'
-    response = requests.get(article_url, headers=headers)
+    response = requests.get(article_url, headers=headers, timeout=10)
     if response.status_code == 200:
         article = response.json()
         return render(request, 'web/knowledge_detail.html', {'article': article})

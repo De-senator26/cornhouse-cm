@@ -1,9 +1,12 @@
-﻿from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from django.db.models import Count, Sum, Q
+﻿# pylint: disable=no-member
+from django.shortcuts import render, redirect
+from django.db.models import Count, Sum
+from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from datetime import timedelta
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from apps.users.models import User
 from apps.harvests.models import Harvest, Loss
 from apps.finance.models import Grant
@@ -12,6 +15,7 @@ from apps.marketplace.models import Listing
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def dashboard_stats(request):
+    """Return analytics metrics for partner and admin users."""
     # Only allow partners and admins
     if request.user.role not in ['partner', 'admin']:
         return Response({'error': 'Permission denied'}, status=403)
@@ -35,14 +39,18 @@ def dashboard_stats(request):
 
     # Harvests per month (last 6 months)
     six_months_ago = timezone.now().date() - timedelta(days=180)
-    harvests_by_month = (
+    harvests_by_month_qs = (
         Harvest.objects
         .filter(harvest_date__gte=six_months_ago)
-        .extra(select={'month': "to_char(harvest_date, 'YYYY-MM')"})
+        .annotate(month=TruncMonth('harvest_date'))
         .values('month')
         .annotate(count=Count('id'))
         .order_by('month')
     )
+    harvests_by_month = [
+        {'month': item['month'].strftime('%Y-%m') if item['month'] else None, 'count': item['count']}
+        for item in harvests_by_month_qs
+    ]
 
     # Losses by type
     losses_by_type = (
@@ -53,14 +61,18 @@ def dashboard_stats(request):
     )
 
     # Farmer growth (last 6 months)
-    farmers_by_month = (
+    farmers_by_month_qs = (
         User.objects
         .filter(role='farmer', date_joined__gte=six_months_ago)
-        .extra(select={'month': "to_char(date_joined, 'YYYY-MM')"})
+        .annotate(month=TruncMonth('date_joined'))
         .values('month')
         .annotate(count=Count('id'))
         .order_by('month')
     )
+    farmers_by_month = [
+        {'month': item['month'].strftime('%Y-%m') if item['month'] else None, 'count': item['count']}
+        for item in farmers_by_month_qs
+    ]
 
     return Response({
         'total_farmers': total_farmers,
@@ -80,7 +92,7 @@ from django.contrib.auth.decorators import login_required
 
 @login_required
 def dashboard_page(request):
+    """Render the analytics dashboard page for authorized users."""
     if request.user.role not in ['partner', 'admin']:
-        from django.shortcuts import redirect
         return redirect('home')
     return render(request, 'analytics/dashboard.html', {'token': request.session.get('access_token')})
