@@ -6,6 +6,7 @@ from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from google import genai
 from google.genai.errors import ClientError
+from .fallback import get_fallback_reply
 
 logger = logging.getLogger(__name__)
 
@@ -57,10 +58,14 @@ Question: {user_message}"""
             getattr(e, 'response', None) or getattr(e, 'body', None) or e.args,
         )
 
+        # Prepare a local fallback reply if possible (uses the user's message if available)
+        user_msg = locals().get('user_message', '')
+        fallback_reply = get_fallback_reply(user_msg)
+
         if status_code == 429:
             logger.warning("Gemini quota exhausted.")
             return JsonResponse({
-                'reply': '🌽 Sorry, Gemini quota is exhausted. Please check your Google AI billing and quota, or try again later.'
+                'reply': f"{fallback_reply} 🌽 Sorry, Gemini quota is exhausted. Please check your Google AI billing and quota, or try again later."
             }, status=429)
 
         return JsonResponse({'reply': f'⚠️ AI service error: {str(e)}'}, status=500)
