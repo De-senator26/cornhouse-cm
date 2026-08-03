@@ -21,6 +21,7 @@ urlpatterns = [
     path('api/finance/', include('apps.finance.urls')),
     path('api/knowledge/', include('apps.knowledge.urls')),
     path('api/analytics/', include('apps.analytics.urls')),
+    path('analytics/', include('apps.analytics.urls')),
     path('chat/', include('apps.chatbot.urls')),
 ]
 
