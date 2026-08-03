@@ -9,7 +9,7 @@ from typing import Optional
 
 def get_fallback_reply(message: Optional[str]) -> str:
     if not message:
-        return "I can't reach the AI backend right now, but I can still help with farming tips: ask about planting, pests, or storage."
+        return "I don't have the AI backend right now, but here's a practical tip: ask about planting times, fertilizer amounts, or pest identification."
 
     m = message.lower()
     if any(greet in m for greet in ("hello", "hi", "hey")):

@@ -55,4 +55,4 @@ class ChatbotIntegrationTest(LiveServerTestCase):
         self.assertEqual(response.status_code, 429)
         data = response.json()
         self.assertIn('Gemini quota is exhausted', data.get('reply', ''))
-        self.assertIn('maize', data.get('reply', '').lower())
+        self.assertIn('practical tip', data.get('reply', '').lower())
