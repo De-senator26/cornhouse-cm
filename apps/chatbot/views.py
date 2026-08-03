@@ -43,13 +43,26 @@ Question: {user_message}"""
         return JsonResponse({'reply': response.text})
 
     except ClientError as e:
-        status_code = getattr(e, 'status', None)
+        # Some versions of the genai ClientError expose different attributes
+        status_code = getattr(e, 'status', None) or getattr(e, 'status_code', None)
+        if status_code is None and getattr(e, 'args', None):
+            first_arg = e.args[0]
+            if isinstance(first_arg, int):
+                status_code = first_arg
+
+        logger.error(
+            "Gemini ClientError: %s %s. %s",
+            getattr(e, 'status', None),
+            getattr(e, 'status_code', None),
+            getattr(e, 'response', None) or getattr(e, 'body', None) or e.args,
+        )
+
         if status_code == 429:
             logger.warning("Gemini quota exhausted.")
             return JsonResponse({
                 'reply': '🌽 Sorry, Gemini quota is exhausted. Please check your Google AI billing and quota, or try again later.'
             }, status=429)
-        logger.error(f"Gemini ClientError: {e}")
+
         return JsonResponse({'reply': f'⚠️ AI service error: {str(e)}'}, status=500)
     except Exception as e:
         logger.error(f"Chatbot error: {e}")
