@@ -1,7 +1,8 @@
-from django.test import TestCase, override_settings, Client
+from django.test import LiveServerTestCase, TestCase, override_settings, Client
 from unittest.mock import patch, MagicMock
 from google.genai.errors import ClientError
 import json
+import requests
 
 
 class ChatbotAPITest(TestCase):
@@ -34,6 +35,24 @@ class ChatbotAPITest(TestCase):
         self.assertEqual(resp.status_code, 429)
         data = resp.json()
         self.assertTrue('quota' in data.get('reply', '').lower() or 'exhaust' in data.get('reply', '').lower())
-from django.test import TestCase
 
-# Create your tests here.
+
+class ChatbotIntegrationTest(LiveServerTestCase):
+    def test_chat_api_returns_fallback_for_quota_error(self):
+        with patch('apps.chatbot.views.genai.Client') as mock_client_cls:
+            mock_client = MagicMock()
+            err = ClientError(429, {'error': {'message': 'Quota exceeded'}}, None)
+            err.status = 429
+            mock_client.models.generate_content.side_effect = err
+            mock_client_cls.return_value = mock_client
+
+            response = requests.post(
+                f'{self.live_server_url}/chat/api/',
+                json={'message': 'How do I plant maize?'},
+                timeout=10,
+            )
+
+        self.assertEqual(response.status_code, 429)
+        data = response.json()
+        self.assertIn('Gemini quota is exhausted', data.get('reply', ''))
+        self.assertIn('maize', data.get('reply', '').lower())
