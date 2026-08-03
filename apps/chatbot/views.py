@@ -62,6 +62,16 @@ Question: {user_message}"""
         user_msg = locals().get('user_message', '')
         fallback_reply = get_fallback_reply(user_msg)
 
+        # Some ClientError variants set a string status like 'RESOURCE_EXHAUSTED'
+        status_text = getattr(e, 'status', None) or getattr(e, 'status_text', None)
+        if isinstance(status_text, str) and 'RESOURCE_EXHAUSTED' in status_text.upper():
+            status_code = 429
+
+        # Also inspect the error text for numeric 429
+        if status_code is None:
+            if '429' in str(e):
+                status_code = 429
+
         if status_code == 429:
             logger.warning("Gemini quota exhausted.")
             return JsonResponse({
