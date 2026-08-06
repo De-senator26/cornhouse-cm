@@ -1,6 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from apps.users.models import User
+from apps.web.models import UserFeedback
 
 
 class WebFrontendTests(TestCase):
@@ -68,3 +69,51 @@ class WebFrontendTests(TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'No account found')
+
+    def test_submit_feedback_authenticated(self):
+        self.client.force_login(self.user)
+        response = self.client.post('/feedback/', {
+            'rating': '5',
+            'category': 'post_harvest',
+            'role': 'farmer',
+            'comment': 'CornHouse hermetic bag tips saved 30% of my harvest!'
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(UserFeedback.objects.filter(user=self.user).exists())
+        feedback = UserFeedback.objects.get(user=self.user)
+        self.assertEqual(feedback.rating, 5)
+        self.assertEqual(feedback.category, 'post_harvest')
+
+    def test_submit_feedback_anonymous(self):
+        response = self.client.post('/feedback/', {
+            'name': 'Emmanuel N.',
+            'rating': '4',
+            'category': 'marketplace',
+            'role': 'buyer',
+            'comment': 'Great marketplace for sourcing quality maize in bulk.'
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(UserFeedback.objects.filter(name='Emmanuel N.').exists())
+
+    def test_submit_feedback_empty_comment_fails(self):
+        response = self.client.post('/feedback/', {
+            'rating': '5',
+            'comment': ''
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Please enter your feedback comments')
+        self.assertEqual(UserFeedback.objects.count(), 0)
+
+    def test_home_page_displays_public_reviews(self):
+        UserFeedback.objects.create(
+            name='Amina B.',
+            rating=5,
+            category='chatbot',
+            role='farmer',
+            comment='The AI Agribot gave instant advice on pest management.',
+            is_public=True
+        )
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Amina B.')
+        self.assertContains(response, 'AI Agribot gave instant advice')

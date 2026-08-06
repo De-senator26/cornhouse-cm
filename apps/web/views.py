@@ -5,17 +5,77 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import DatabaseError
+from django.db.models import Avg, Count
 from django.conf import settings
 import requests
 from rest_framework_simplejwt.tokens import RefreshToken
 from apps.users.models import User
+from .models import UserFeedback
 
 logger = logging.getLogger(__name__)
 
 
 def home(request):
-    """Render the CornHouse home page."""
-    return render(request, 'web/home.html')
+    """Render the CornHouse home page with recent user feedback & testimonials."""
+    public_reviews = UserFeedback.objects.filter(is_public=True)[:6]
+    stats = UserFeedback.objects.filter(is_public=True).aggregate(
+        avg_rating=Avg('rating'),
+        total_count=Count('id')
+    )
+    avg_rating = round(stats['avg_rating'] or 5.0, 1)
+    total_count = stats['total_count'] or 0
+
+    return render(request, 'web/home.html', {
+        'reviews': public_reviews,
+        'avg_rating': avg_rating,
+        'total_reviews': total_count,
+    })
+
+
+def submit_feedback(request):
+    """Process user feedback submission."""
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        role = request.POST.get('role', 'farmer')
+        category = request.POST.get('category', 'general')
+        comment = request.POST.get('comment', '').strip()
+
+        try:
+            rating = int(request.POST.get('rating', 5))
+            if rating < 1 or rating > 5:
+                rating = 5
+        except (ValueError, TypeError):
+            rating = 5
+
+        if not comment:
+            messages.error(request, 'Please enter your feedback comments before submitting.')
+            next_url = request.META.get('HTTP_REFERER', '/')
+            return redirect(next_url)
+
+        user = request.user if request.user.is_authenticated else None
+
+        # Build display name if empty
+        if not name:
+            if user:
+                name = user.username
+            else:
+                name = "Anonymous Farmer"
+
+        UserFeedback.objects.create(
+            user=user,
+            name=name,
+            role=role,
+            rating=rating,
+            category=category,
+            comment=comment,
+            is_public=True
+        )
+
+        messages.success(request, '🎉 Thank you for your feedback! Your review helps us improve CornHouse for everyone.')
+        next_url = request.META.get('HTTP_REFERER', '/')
+        return redirect(next_url)
+
+    return redirect('home')
 
 
 def _issue_jwt_for_user(user):
@@ -38,13 +98,11 @@ def login_view(request):
             messages.error(request, 'Please enter both username and password.')
             return render(request, 'web/login.html')
 
-        # Authenticate directly against the database — no HTTP round-trip needed.
         user = authenticate(request, username=username, password=password)
         if user is not None:
             if not user.is_active:
                 messages.error(request, 'Your account has been deactivated. Please contact support.')
                 return render(request, 'web/login.html')
-            # Issue JWT tokens directly (no self-HTTP call)
             try:
                 access_token, refresh_token = _issue_jwt_for_user(user)
             except Exception as exc:
@@ -58,10 +116,8 @@ def login_view(request):
             request.session['user'] = username
             return redirect('dashboard')
         else:
-            # Give a clearer error so users know what went wrong.
             try:
-                db_user = User.objects.get(username=username)
-                # User exists but password is wrong
+                User.objects.get(username=username)
                 logger.warning("Failed login attempt for existing user: %s", username)
                 messages.error(request, 'Incorrect password. Please try again.')
             except User.DoesNotExist:
@@ -102,7 +158,6 @@ def register_view(request):
         password = request.POST.get('password', '')
         password_confirm = request.POST.get('password_confirm', '')
 
-        # Validate role against allowed choices
         allowed_roles = [r[0] for r in User.ROLE_CHOICES]
         if role not in allowed_roles:
             role = 'farmer'

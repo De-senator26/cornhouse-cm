@@ -144,6 +144,47 @@ body {
     scroll-behavior: smooth;
 }
 
+/* ----- Star Rating Widget ----- */
+.star-rating {
+    display: inline-flex;
+    flex-direction: row-reverse;
+    font-size: 2rem;
+    gap: 0.25rem;
+}
+.star-rating input {
+    display: none;
+}
+.star-rating label {
+    color: #ddd;
+    cursor: pointer;
+    transition: color var(--transition), transform var(--transition);
+}
+.star-rating label:hover,
+.star-rating label:hover ~ label,
+.star-rating input:checked ~ label {
+    color: var(--primary-gold);
+}
+.star-rating label:hover {
+    transform: scale(1.15);
+}
+
+/* Static star display */
+.stars-gold {
+    color: var(--primary-gold);
+    letter-spacing: 2px;
+}
+
+/* Review Cards */
+.review-card {
+    border-top: 3px solid var(--primary-gold);
+    border-radius: var(--border-radius);
+    transition: transform var(--transition), box-shadow var(--transition);
+}
+.review-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.08) !important;
+}
+
 /* ----- Footer ----- */
 .footer-custom {
     background-color: var(--dark-green);
