@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'apps.marketplace',
     'apps.finance',
     'apps.knowledge',
-    'apps.web', 'apps.analytics',
+    'apps.web',
+    'apps.analytics',
     'apps.chatbot',
 ]
 
