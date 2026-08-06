@@ -17,11 +17,10 @@ class ChatbotAPITest(TestCase):
         self.assertIn('API key not configured', data.get('reply', ''))
 
     @patch('apps.chatbot.views.genai.Client')
-    def test_gemini_quota_error_returns_429(self, mock_client_cls):
+    def test_gemini_quota_error_returns_fallback_reply(self, mock_client_cls):
         # Arrange: make the genai client raise a ClientError with status 429
         mock_client = MagicMock()
         err = ClientError(429, {'error': {'message': 'Quota exceeded'}}, None)
-        # Some ClientError variants expose status or status_code attributes
         err.status = 429
         err.status_code = 429
         mock_client.models.generate_content.side_effect = err
@@ -31,10 +30,10 @@ class ChatbotAPITest(TestCase):
         with override_settings(GEMINI_API_KEY='fake'):
             resp = self.client.post('/chat/api/', data=json.dumps({'message': 'hello'}), content_type='application/json')
 
-        # Assert: service returns 429 and a helpful message about quota
-        self.assertEqual(resp.status_code, 429)
+        # Assert: service returns 200 and a friendly keyword fallback message
+        self.assertEqual(resp.status_code, 200)
         data = resp.json()
-        self.assertTrue('quota' in data.get('reply', '').lower() or 'exhaust' in data.get('reply', '').lower())
+        self.assertTrue('hello' in data.get('reply', '').lower() or 'farming' in data.get('reply', '').lower())
 
 
 class ChatbotIntegrationTest(LiveServerTestCase):
@@ -52,7 +51,6 @@ class ChatbotIntegrationTest(LiveServerTestCase):
                 timeout=10,
             )
 
-        self.assertEqual(response.status_code, 429)
+        self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertIn('Gemini quota is exhausted', data.get('reply', ''))
-        self.assertIn('practical tip', data.get('reply', '').lower())
+        self.assertIn('plant', data.get('reply', '').lower())

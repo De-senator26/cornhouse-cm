@@ -1,4 +1,4 @@
-﻿"""Marketplace models for CornHouse."""
+"""Marketplace models for CornHouse."""
 from django.db import models
 from django.conf import settings
 from apps.harvests.models import Harvest
@@ -28,6 +28,9 @@ class Listing(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     image = models.ImageField(upload_to='listings/', null=True, blank=True, help_text="Upload a photo of your maize")
 
+    class Meta:
+        ordering = ['-created_at']
+
     def __str__(self) -> str:
         return f"{self.farmer.get_username()} - {self.quantity_kg}kg at {self.price_per_kg} XAF/kg"  # pylint: disable=no-member
 
@@ -56,6 +59,9 @@ class Offer(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     message = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
 
     def __str__(self) -> str:
         return f"{self.buyer.get_username()} - {self.listing} - {self.offered_price} XAF/kg"  # pylint: disable=no-member

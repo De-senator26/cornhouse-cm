@@ -1,4 +1,4 @@
-﻿import json
+import json
 import logging
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
@@ -63,19 +63,16 @@ Question: {user_message}"""
         if isinstance(status_text, str) and 'RESOURCE_EXHAUSTED' in status_text.upper():
             status_code = 429
 
-        # Use a generic fallback reply for quota exhaustion rather than a message-specific answer.
-        fallback_reply = get_fallback_reply(None)
-
         # Also inspect the error text for numeric 429
         if status_code is None:
             if '429' in str(e):
                 status_code = 429
 
         if status_code == 429:
-            logger.warning("Gemini quota exhausted.")
-            return JsonResponse({
-                'reply': f"{fallback_reply} 🌽 Sorry, Gemini quota is exhausted. Please check your Google AI billing and quota, or try again later."
-            }, status=429)
+            logger.warning("Gemini quota exhausted, serving local fallback.")
+            # Pass the user message so keyword-based farming tips are returned
+            fallback_reply = get_fallback_reply(user_message)
+            return JsonResponse({'reply': fallback_reply})
 
         return JsonResponse({'reply': f'⚠️ AI service error: {str(e)}'}, status=500)
     except Exception as e:

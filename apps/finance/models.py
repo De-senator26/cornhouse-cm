@@ -32,6 +32,9 @@ class Grant(models.Model):
     decision_date = models.DateField(null=True, blank=True)
     notes = models.TextField(blank=True, help_text="Admin notes or feedback")
 
+    class Meta:
+        ordering = ['-application_date']
+
     def __str__(self) -> str:
         return f"{self.farmer.get_username()} - {self.amount_requested} XAF - {self.status}"  # pylint: disable=no-member
 
@@ -70,6 +73,9 @@ class Loan(models.Model):
     repayment_due = models.DateField(null=True, blank=True)
     notes = models.TextField(blank=True)
 
+    class Meta:
+        ordering = ['-application_date']
+
     def __str__(self) -> str:
         return f"{self.farmer.get_username()} - {self.amount} XAF - {self.status}"  # pylint: disable=no-member
 
@@ -95,6 +101,8 @@ class Repayment(models.Model):
     )
     notes = models.TextField(blank=True)
 
+    class Meta:
+        ordering = ['-payment_date']
+
     def __str__(self) -> str:
         return f"{self.loan} - {self.amount_paid} XAF - {self.payment_date}"
-    

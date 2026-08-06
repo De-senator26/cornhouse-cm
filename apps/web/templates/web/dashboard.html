@@ -1,10 +1,10 @@
-﻿{% extends 'web/base.html' %}
+{% extends 'web/base.html' %}
 
 {% block title %}Dashboard – CornHouse{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">👋 Welcome, {{ request.session.user }}</h2>
-<p class="text-muted">Role: <strong>{{ role|capfirst }}</strong></p>
+<h2 class="mb-2">👋 Welcome, {{ request.session.user }}</h2>
+<p class="text-muted mb-4">Role: <strong>{{ role|capfirst }}</strong></p>
 
 <div class="row">
     <!-- ======================== FARMER SECTIONS ======================== -->
@@ -15,7 +15,13 @@
                 <span>My Harvests</span>
                 <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#harvestModal">+ Add</button>
             </div>
-            <div class="card-body" id="harvest-list"><p class="text-muted">Loading...</p></div>
+            <div class="card-body" id="harvest-list">
+                <div class="skeleton-card">
+                    <div class="skeleton skeleton-line-full"></div>
+                    <div class="skeleton skeleton-line-med"></div>
+                    <div class="skeleton skeleton-line-short"></div>
+                </div>
+            </div>
         </div>
     </div>
     <div class="col-12 col-md-6">
@@ -24,7 +30,13 @@
                 <span>My Listings</span>
                 <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#listingModal">+ Add</button>
             </div>
-            <div class="card-body" id="listing-list"><p class="text-muted">Loading...</p></div>
+            <div class="card-body" id="listing-list">
+                <div class="skeleton-card">
+                    <div class="skeleton skeleton-line-full"></div>
+                    <div class="skeleton skeleton-line-med"></div>
+                    <div class="skeleton skeleton-line-short"></div>
+                </div>
+            </div>
         </div>
     </div>
     <div class="col-12 col-md-6">
@@ -33,7 +45,12 @@
                 <span>My Grants</span>
                 <button class="btn btn-sm btn-dark" data-bs-toggle="modal" data-bs-target="#grantModal">+ Apply</button>
             </div>
-            <div class="card-body" id="grant-list"><p class="text-muted">Loading...</p></div>
+            <div class="card-body" id="grant-list">
+                <div class="skeleton-card">
+                    <div class="skeleton skeleton-line-full"></div>
+                    <div class="skeleton skeleton-line-med"></div>
+                </div>
+            </div>
         </div>
     </div>
     <div class="col-12 col-md-6">
@@ -42,7 +59,12 @@
                 <span>Offers Received</span>
                 <span class="badge bg-light text-dark" id="offer-count">0</span>
             </div>
-            <div class="card-body" id="farmer-offers"><p class="text-muted">Loading...</p></div>
+            <div class="card-body" id="farmer-offers">
+                <div class="skeleton-card">
+                    <div class="skeleton skeleton-line-full"></div>
+                    <div class="skeleton skeleton-line-med"></div>
+                </div>
+            </div>
         </div>
     </div>
     {% endif %}
@@ -55,7 +77,13 @@
                 <span>Available Listings</span>
                 <span class="badge bg-light text-dark" id="listing-count">0</span>
             </div>
-            <div class="card-body" id="available-listings"><p class="text-muted">Loading...</p></div>
+            <div class="card-body" id="available-listings">
+                <div class="skeleton-card">
+                    <div class="skeleton skeleton-line-full"></div>
+                    <div class="skeleton skeleton-line-med"></div>
+                    <div class="skeleton skeleton-line-short"></div>
+                </div>
+            </div>
         </div>
     </div>
     <div class="col-12">
@@ -64,7 +92,12 @@
                 <span>My Offers</span>
                 <span class="badge bg-light text-dark" id="offer-count">0</span>
             </div>
-            <div class="card-body" id="offer-list"><p class="text-muted">Loading...</p></div>
+            <div class="card-body" id="offer-list">
+                <div class="skeleton-card">
+                    <div class="skeleton skeleton-line-full"></div>
+                    <div class="skeleton skeleton-line-med"></div>
+                </div>
+            </div>
         </div>
     </div>
     {% endif %}
@@ -77,13 +110,23 @@
                 <span>Grants to Review</span>
                 <span class="badge bg-dark text-white" id="grant-review-count">0</span>
             </div>
-            <div class="card-body" id="grants-review"><p class="text-muted">Loading...</p></div>
+            <div class="card-body" id="grants-review">
+                <div class="skeleton-card">
+                    <div class="skeleton skeleton-line-full"></div>
+                    <div class="skeleton skeleton-line-med"></div>
+                </div>
+            </div>
         </div>
     </div>
     <div class="col-12 col-md-6">
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-info text-white">Impact Metrics</div>
-            <div class="card-body" id="impact-metrics"><p class="text-muted">Loading...</p></div>
+            <div class="card-body" id="impact-metrics">
+                <div class="skeleton-card">
+                    <div class="skeleton skeleton-line-med"></div>
+                    <div class="skeleton skeleton-line-short"></div>
+                </div>
+            </div>
         </div>
     </div>
     {% endif %}
@@ -93,23 +136,40 @@
     <div class="col-12 col-md-4">
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-danger text-white">All Users</div>
-            <div class="card-body" id="admin-users"><p class="text-muted">Loading...</p></div>
+            <div class="card-body" id="admin-users">
+                <div class="skeleton-card">
+                    <div class="skeleton skeleton-line-full"></div>
+                    <div class="skeleton skeleton-line-med"></div>
+                    <div class="skeleton skeleton-line-short"></div>
+                </div>
+            </div>
         </div>
     </div>
     <div class="col-12 col-md-4">
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-success text-white">All Harvests</div>
-            <div class="card-body" id="admin-harvests"><p class="text-muted">Loading...</p></div>
+            <div class="card-body" id="admin-harvests">
+                <div class="skeleton-card">
+                    <div class="skeleton skeleton-line-full"></div>
+                    <div class="skeleton skeleton-line-med"></div>
+                </div>
+            </div>
         </div>
     </div>
     <div class="col-12 col-md-4">
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-primary text-white">All Listings</div>
-            <div class="card-body" id="admin-listings"><p class="text-muted">Loading...</p></div>
+            <div class="card-body" id="admin-listings">
+                <div class="skeleton-card">
+                    <div class="skeleton skeleton-line-full"></div>
+                    <div class="skeleton skeleton-line-med"></div>
+                </div>
+            </div>
         </div>
     </div>
     {% endif %}
 </div>
+
 
 <div class="mt-4 d-flex flex-wrap gap-2">
     <a href="/admin/" class="btn btn-outline-secondary">Admin Panel</a>

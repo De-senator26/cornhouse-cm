@@ -1,4 +1,4 @@
-﻿# pylint: disable=no-member
+# pylint: disable=no-member
 from django.shortcuts import render, redirect
 from django.db.models import Count, Sum
 from django.db.models.functions import TruncMonth
@@ -11,6 +11,7 @@ from apps.users.models import User
 from apps.harvests.models import Harvest, Loss
 from apps.finance.models import Grant
 from apps.marketplace.models import Listing
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -87,12 +88,15 @@ def dashboard_stats(request):
         'farmers_by_month': list(farmers_by_month),
     })
 
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
 
-@login_required
 def dashboard_page(request):
-    """Render the analytics dashboard page for authorized users."""
-    if request.user.role not in ['partner', 'admin']:
+    """Render the analytics dashboard page for authorized users.
+
+    Uses session-based auth check instead of @login_required so the
+    redirect goes to /login/ (our custom login) not /accounts/login/.
+    """
+    if not request.session.get('access_token'):
+        return redirect('login')
+    if not hasattr(request.user, 'role') or request.user.role not in ['partner', 'admin']:
         return redirect('home')
     return render(request, 'analytics/dashboard.html', {'token': request.session.get('access_token')})

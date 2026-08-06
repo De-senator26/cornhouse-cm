@@ -8,6 +8,9 @@ class StorageMethod(models.Model):
     name = models.CharField(max_length=50, unique=True)
     description = models.TextField(blank=True)
 
+    class Meta:
+        ordering = ['name']
+
     def __str__(self) -> str:  # pylint: disable=invalid-str-returned
         return self.name
 
@@ -43,6 +46,9 @@ class Harvest(models.Model):
     is_sold = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ['-created_at']
+
     def __str__(self) -> str:
         return f"{self.farmer.get_username()} - {self.harvest_date} - {self.quantity_kg}kg"  # pylint: disable=no-member
 
@@ -66,6 +72,8 @@ class Loss(models.Model):
     reported_date = models.DateField(auto_now_add=True)
     description = models.TextField(blank=True)
 
+    class Meta:
+        ordering = ['-reported_date']
+
     def __str__(self) -> str:
         return f"{self.loss_type} - {self.quantity_kg}kg"
-    

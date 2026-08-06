@@ -1,4 +1,4 @@
-﻿"""
+"""
 URL configuration for cornhouse project.
 """
 from django.contrib import admin
@@ -9,6 +9,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+from apps.analytics.views import dashboard_stats
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -20,7 +21,7 @@ urlpatterns = [
     path('api/marketplace/', include('apps.marketplace.urls')),
     path('api/finance/', include('apps.finance.urls')),
     path('api/knowledge/', include('apps.knowledge.urls')),
-    path('api/analytics/', include('apps.analytics.urls')),
+    path('api/analytics/stats/', dashboard_stats, name='api_analytics_stats'),
     path('analytics/', include('apps.analytics.urls')),
     path('chat/', include('apps.chatbot.urls')),
 ]

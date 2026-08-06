@@ -1,29 +1,45 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}CornHouse{% endblock %}</title>
-    <!-- Bootstrap 5 -->
+
+    <!-- Preconnect to external origins — eliminates DNS+TCP+TLS latency -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
+
+    <!-- Google Fonts — Inter with full weight range, swap prevents FOIT -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <!-- Custom CSS -->
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
+
+    <!-- Page-load progress bar (pure CSS, no JS needed) -->
+    <div class="page-progress" id="page-progress" aria-hidden="true"></div>
+
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-custom">
         <div class="container">
             <a class="navbar-brand" href="/">🌽 CornHouse</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler navbar-toggler-custom" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/knowledge/">Knowledge</a></li><li class="nav-item"><a class="nav-link" href="/analytics/">Analytics</a></li><li class="nav-item"><a class="nav-link" href="/chat/">Chat</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/knowledge/">Knowledge</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/analytics/">Analytics</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/chat/">Chat</a></li>
                     {% if request.session.user %}
                         <li class="nav-item"><a class="nav-link" href="/dashboard/">Dashboard</a></li>
                         <li class="nav-item"><a class="nav-link" href="/logout/">Logout</a></li>
@@ -37,7 +53,7 @@
     </nav>
 
     <!-- Main content -->
-    <main class="container my-5">
+    <main class="container my-4 my-md-5">
         {% block content %}{% endblock %}
     </main>
 
@@ -47,7 +63,7 @@
             <div class="row">
                 <div class="col-md-4 mb-3">
                     <h5>🌽 CornHouse</h5>
-                    <p class="text-white-50">Empowering rural maize farmers in Cameroon through post‑harvest management, financial inclusion, and market access.</p>
+                    <p class="text-white-50">Empowering rural maize farmers in Cameroon through post&#8209;harvest management, financial inclusion, and market access.</p>
                 </div>
                 <div class="col-md-4 mb-3">
                     <h5>Quick Links</h5>
@@ -70,9 +86,9 @@
                         📞 +237 699 999 999<br>
                         🌍 Cameroon
                     </p>
-                    <div>
-                        <a href="#" class="text-white me-2">🐦</a>
-                        <a href="#" class="text-white me-2">📘</a>
+                    <div class="social-icons d-flex gap-2">
+                        <a href="#" class="text-white">🐦</a>
+                        <a href="#" class="text-white">📘</a>
                         <a href="#" class="text-white">📸</a>
                     </div>
                 </div>
@@ -84,9 +100,18 @@
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Scripts deferred so they never block HTML parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" defer></script>
+
+    <!-- Hide progress bar once page is fully loaded -->
+    <script>
+        window.addEventListener('load', function () {
+            var bar = document.getElementById('page-progress');
+            if (bar) { bar.classList.add('done'); }
+        });
+    </script>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>
-
