@@ -54,6 +54,25 @@ class WebFrontendTests(TestCase):
         self.assertIn('refresh_token', self.client.session)
         self.assertEqual(self.client.session['user'], 'testfarmer')
 
+    def test_login_with_email(self):
+        response = self.client.post('/login/', {
+            'username': 'farmer@example.com',
+            'password': 'Password123!'
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('access_token', self.client.session)
+        self.assertEqual(self.client.session['user'], 'testfarmer')
+
+    def test_login_with_phone(self):
+        response = self.client.post('/login/', {
+            'username': '+237690000001',
+            'password': 'Password123!'
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('access_token', self.client.session)
+        self.assertEqual(self.client.session['user'], 'testfarmer')
+
+
     def test_login_incorrect_password(self):
         response = self.client.post('/login/', {
             'username': 'testfarmer',

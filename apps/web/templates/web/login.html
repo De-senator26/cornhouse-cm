@@ -19,8 +19,8 @@
                 <form method="post">
                     {% csrf_token %}
                     <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
+                        <label for="username" class="form-label">Username, Email, or Phone Number</label>
+                        <input type="text" class="form-control" id="username" name="username" placeholder="Enter username, email, or phone" required>
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>

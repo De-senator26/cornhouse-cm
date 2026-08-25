@@ -14,7 +14,8 @@ class ChatbotAPITest(TestCase):
         resp = self.client.post('/chat/api/', data=json.dumps({'message': 'hi'}), content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
-        self.assertIn('API key not configured', data.get('reply', ''))
+        self.assertTrue('hello' in data.get('reply', '').lower() or 'farming' in data.get('reply', '').lower())
+
 
     @patch('apps.chatbot.views.genai.Client')
     def test_gemini_quota_error_returns_fallback_reply(self, mock_client_cls):

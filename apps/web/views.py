@@ -91,14 +91,14 @@ def _issue_jwt_for_user(user):
 def login_view(request):
     """Authenticate the user and store JWT tokens in session."""
     if request.method == 'POST':
-        username = request.POST.get('username', '').strip()
+        username_or_id = request.POST.get('username', '').strip()
         password = request.POST.get('password', '')
 
-        if not username or not password:
-            messages.error(request, 'Please enter both username and password.')
+        if not username_or_id or not password:
+            messages.error(request, 'Please enter both your identifier (username/email/phone) and password.')
             return render(request, 'web/login.html')
 
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(request, username=username_or_id, password=password)
         if user is not None:
             if not user.is_active:
                 messages.error(request, 'Your account has been deactivated. Please contact support.')
@@ -106,22 +106,27 @@ def login_view(request):
             try:
                 access_token, refresh_token = _issue_jwt_for_user(user)
             except Exception as exc:
-                logger.error("JWT generation failed for %s: %s", username, exc)
+                logger.error("JWT generation failed for %s: %s", user.username, exc)
                 messages.error(request, 'Login succeeded but token generation failed. Please try again.')
                 return render(request, 'web/login.html')
 
             login(request, user)
             request.session['access_token'] = access_token
             request.session['refresh_token'] = refresh_token
-            request.session['user'] = username
+            request.session['user'] = user.username
             return redirect('dashboard')
         else:
-            try:
-                User.objects.get(username=username)
-                logger.warning("Failed login attempt for existing user: %s", username)
+            from django.db.models import Q
+            existing = User.objects.filter(
+                Q(username__iexact=username_or_id) |
+                Q(email__iexact=username_or_id) |
+                Q(phone__iexact=username_or_id)
+            ).exists()
+            if existing:
+                logger.warning("Failed login attempt for existing user: %s", username_or_id)
                 messages.error(request, 'Incorrect password. Please try again.')
-            except User.DoesNotExist:
-                messages.error(request, 'No account found with that username. Please register first.')
+            else:
+                messages.error(request, 'No account found with that username, email, or phone number. Please register first.')
 
     return render(request, 'web/login.html')
 
@@ -153,7 +158,7 @@ def register_view(request):
     if request.method == 'POST':
         username = request.POST.get('username', '').strip()
         email = request.POST.get('email', '').strip()
-        phone = request.POST.get('phone', '').strip()
+        phone = request.POST.get('phone', '').strip() or None
         role = request.POST.get('role', 'farmer')
         password = request.POST.get('password', '')
         password_confirm = request.POST.get('password_confirm', '')
@@ -174,8 +179,12 @@ def register_view(request):
             messages.error(request, 'Password must be at least 8 characters.')
             return render(request, 'web/register.html')
 
-        if User.objects.filter(username=username).exists():
+        if User.objects.filter(username__iexact=username).exists():
             messages.error(request, 'Username already taken. Please choose another.')
+            return render(request, 'web/register.html')
+
+        if email and User.objects.filter(email__iexact=email).exists():
+            messages.error(request, 'Email address is already registered.')
             return render(request, 'web/register.html')
 
         if phone and User.objects.filter(phone=phone).exists():
@@ -199,6 +208,7 @@ def register_view(request):
             return render(request, 'web/register.html')
 
     return render(request, 'web/register.html')
+
 
 
 def knowledge_hub(request):

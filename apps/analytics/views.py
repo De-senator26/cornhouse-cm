@@ -13,6 +13,15 @@ from apps.finance.models import Grant
 from apps.marketplace.models import Listing
 
 
+def _format_month(val):
+    """Format date, datetime, or date-string as YYYY-MM safely."""
+    if not val:
+        return None
+    if hasattr(val, 'strftime'):
+        return val.strftime('%Y-%m')
+    return str(val)[:7]
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def dashboard_stats(request):
@@ -49,7 +58,7 @@ def dashboard_stats(request):
         .order_by('month')
     )
     harvests_by_month = [
-        {'month': item['month'].strftime('%Y-%m') if item['month'] else None, 'count': item['count']}
+        {'month': _format_month(item['month']), 'count': item['count']}
         for item in harvests_by_month_qs
     ]
 
@@ -71,9 +80,10 @@ def dashboard_stats(request):
         .order_by('month')
     )
     farmers_by_month = [
-        {'month': item['month'].strftime('%Y-%m') if item['month'] else None, 'count': item['count']}
+        {'month': _format_month(item['month']), 'count': item['count']}
         for item in farmers_by_month_qs
     ]
+
 
     return Response({
         'total_farmers': total_farmers,

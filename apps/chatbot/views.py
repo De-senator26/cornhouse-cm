@@ -23,12 +23,13 @@ def chat_api(request):
         data = json.loads(request.body)
         user_message = data.get('message', '').strip()
         if not user_message:
-            return JsonResponse({'error': 'No message'}, status=400)
+            return JsonResponse({'error': 'No message provided'}, status=400)
 
         api_key = getattr(settings, 'GEMINI_API_KEY', None)
         if not api_key:
-            logger.error("GEMINI_API_KEY missing")
-            return JsonResponse({'reply': '⚠️ API key not configured. Please contact admin.'})
+            logger.info("GEMINI_API_KEY missing, serving local agricultural fallback.")
+            fallback_reply = get_fallback_reply(user_message)
+            return JsonResponse({'reply': fallback_reply})
 
         client = genai.Client(api_key=api_key)
         model_name = 'gemini-2.0-flash'
@@ -44,40 +45,14 @@ Question: {user_message}"""
         return JsonResponse({'reply': response.text})
 
     except ClientError as e:
-        # Some versions of the genai ClientError expose different attributes
-        status_code = getattr(e, 'status', None) or getattr(e, 'status_code', None)
-        if status_code is None and getattr(e, 'args', None):
-            first_arg = e.args[0]
-            if isinstance(first_arg, int):
-                status_code = first_arg
-
-        logger.error(
-            "Gemini ClientError: %s %s. %s",
-            getattr(e, 'status', None),
-            getattr(e, 'status_code', None),
-            getattr(e, 'response', None) or getattr(e, 'body', None) or e.args,
-        )
-
-        # Some ClientError variants set a string status like 'RESOURCE_EXHAUSTED'
-        status_text = getattr(e, 'status', None) or getattr(e, 'status_text', None)
-        if isinstance(status_text, str) and 'RESOURCE_EXHAUSTED' in status_text.upper():
-            status_code = 429
-
-        # Also inspect the error text for numeric 429
-        if status_code is None:
-            if '429' in str(e):
-                status_code = 429
-
-        if status_code == 429:
-            logger.warning("Gemini quota exhausted, serving local fallback.")
-            # Pass the user message so keyword-based farming tips are returned
-            fallback_reply = get_fallback_reply(user_message)
-            return JsonResponse({'reply': fallback_reply})
-
-        return JsonResponse({'reply': f'⚠️ AI service error: {str(e)}'}, status=500)
+        logger.warning("Gemini ClientError (%s), serving local fallback.", e)
+        fallback_reply = get_fallback_reply(user_message)
+        return JsonResponse({'reply': fallback_reply})
     except Exception as e:
-        logger.error(f"Chatbot error: {e}")
-        return JsonResponse({'reply': f'⚠️ Error: {str(e)}'}, status=500)
+        logger.error(f"Chatbot error: {e}, serving local fallback.")
+        fallback_reply = get_fallback_reply(user_message)
+        return JsonResponse({'reply': fallback_reply})
+
 
 @csrf_exempt
 def clear_history(request):

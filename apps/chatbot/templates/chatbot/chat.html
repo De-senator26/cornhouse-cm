@@ -12,7 +12,7 @@
         <button id="clear-btn" class="btn btn-outline-danger btn-sm">🗑 Clear chat</button>
     </div>
 
-    <div class="card-body p-0" id="chat-box">
+    <div class="card-body p-3" id="chat-box" style="height: 440px; overflow-y: auto;">
 
         {% if history %}
             {% for msg in history %}
@@ -45,7 +45,8 @@
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
     const clearBtn = document.getElementById('clear-btn');
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const csrfTokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    const csrfToken = csrfTokenEl ? csrfTokenEl.value : '';
 
     // Scroll to bottom on load so the newest message is visible
     chatBox.scrollTop = chatBox.scrollHeight;
@@ -60,7 +61,7 @@
         const div = document.createElement('div');
         div.classList.add('d-flex', 'mb-2');
         const inner = document.createElement('div');
-        inner.style.maxWidth = '70%';
+        inner.style.maxWidth = '75%';
         inner.style.whiteSpace = 'pre-wrap';
         inner.textContent = text;   // use textContent to avoid XSS
         if (sender === 'user') {
@@ -77,7 +78,7 @@
         const div = document.createElement('div');
         div.classList.add('d-flex', 'mb-2');
         div.id = 'typing-indicator';
-        div.innerHTML = `<div class="bg-light border p-2 rounded text-muted" style="max-width:70%;">
+        div.innerHTML = `<div class="bg-light border p-2 rounded text-muted" style="max-width:75%;">
             <span class="spinner-grow spinner-grow-sm me-1" role="status"></span>Thinking…
         </div>`;
         chatBox.appendChild(div);
@@ -91,7 +92,7 @@
 
     async function sendMessage() {
         const message = userInput.value.trim();
-        if (!message) return;
+        if (!message || sendBtn.disabled) return;
         addMessage('user', message);
         userInput.value = '';
         sendBtn.disabled = true;
@@ -107,12 +108,10 @@
             });
             const data = await response.json();
             removeTypingIndicator();
-            if (response.ok && data.reply) {
+            if (data.reply) {
                 addMessage('bot', data.reply);
             } else if (data.error) {
-                addMessage('bot', '⚠️ Error: ' + data.error);
-            } else if (data.reply) {
-                addMessage('bot', '⚠️ ' + data.reply);
+                addMessage('bot', '⚠️ ' + data.error);
             } else {
                 addMessage('bot', '⚠️ Error: Unexpected response. Please check the server logs.');
             }
@@ -135,8 +134,11 @@
 
     sendBtn.addEventListener('click', sendMessage);
     clearBtn.addEventListener('click', clearHistory);
-    userInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
+    userInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            sendMessage();
+        }
     });
 </script>
 {% endblock %}
