@@ -21,9 +21,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
+DEBUG = os.getenv('DEBUG', 'False').lower() in {'1', 'true', 'yes', 'on'}
 
-ALLOWED_HOSTS = ['*']  # temporary â€“ restrict later
+# Render and other reverse proxies pass traffic through HTTPS. Accept a comma-separated
+# list of hosts from env, or fall back to '*' for local development.
+_allowed_hosts = os.getenv('ALLOWED_HOSTS', '*')
+ALLOWED_HOSTS = ['*'] if _allowed_hosts == '*' else [host.strip() for host in _allowed_hosts.split(',') if host.strip()]
+
+# Render terminates TLS at the edge and forwards plain HTTP internally.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+
+# Trust common Render domains when provided via ALLOWED_HOSTS.
+if not DEBUG and _allowed_hosts != '*':
+    csrf_hosts = [f'https://{host}' for host in ALLOWED_HOSTS if host not in {'localhost', '127.0.0.1', '0.0.0.0'}]
+    CSRF_TRUSTED_ORIGINS = csrf_hosts + ['https://localhost', 'http://localhost']
 
 # Application definition
 INSTALLED_APPS = [
@@ -79,7 +92,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'cornhouse.wsgi.application'
 
-# Database â€“ production uses DATABASE_URL; local dev falls back to SQLite
+# Database - production uses DATABASE_URL; local dev falls back to SQLite
 _db_url = os.getenv('DATABASE_URL')
 if _db_url:
     DATABASES = {'default': dj_database_url.config(default=_db_url)}
@@ -108,7 +121,15 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
+WHITENOISE_MANIFEST_STRICT = False
 WHITENOISE_MAX_AGE = 31536000  # 1 year — browsers cache static assets aggressively
 
 MEDIA_URL = '/media/'
@@ -153,3 +174,13 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY') or None
 
 # Auth redirect — ensures @login_required sends users to our custom login page
 LOGIN_URL = '/login/'
+
+if DEBUG:
+    # Use MD5 for faster password hashing during local development (speeds up login/user creation)
+    PASSWORD_HASHERS = [
+        'django.contrib.auth.hashers.MD5PasswordHasher',
+    ]
+    # Bypass WhiteNoise compression/manifest generation on runserver to speed up launch
+    STORAGES["staticfiles"] = {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    }

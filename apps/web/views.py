@@ -6,8 +6,6 @@ from django.contrib.auth import authenticate, login
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import DatabaseError
 from django.db.models import Avg, Count
-from django.conf import settings
-import requests
 from rest_framework_simplejwt.tokens import RefreshToken
 from apps.users.models import User
 from .models import UserFeedback
@@ -17,13 +15,19 @@ logger = logging.getLogger(__name__)
 
 def home(request):
     """Render the CornHouse home page with recent user feedback & testimonials."""
-    public_reviews = UserFeedback.objects.filter(is_public=True)[:6]
-    stats = UserFeedback.objects.filter(is_public=True).aggregate(
-        avg_rating=Avg('rating'),
-        total_count=Count('id')
-    )
-    avg_rating = round(stats['avg_rating'] or 5.0, 1)
-    total_count = stats['total_count'] or 0
+    try:
+        public_reviews = UserFeedback.objects.filter(is_public=True)[:6]
+        stats = UserFeedback.objects.filter(is_public=True).aggregate(
+            avg_rating=Avg('rating'),
+            total_count=Count('id')
+        )
+        avg_rating = round(stats['avg_rating'] or 5.0, 1)
+        total_count = stats['total_count'] or 0
+    except Exception as exc:
+        logger.error("Failed to load feedback for homepage: %s", exc)
+        public_reviews = []
+        avg_rating = 5.0
+        total_count = 0
 
     return render(request, 'web/home.html', {
         'reviews': public_reviews,
@@ -218,19 +222,13 @@ def knowledge_hub(request):
 
 def knowledge_detail(request, article_id):
     """Render a single knowledge article detail page."""
-    token = request.session.get('access_token')
-    headers = {}
-    if token:
-        headers = {'Authorization': f'Bearer {token}'}
-    if settings.DEBUG:
-        article_url = request.build_absolute_uri(f'/api/knowledge/articles/{article_id}/')
-    else:
-        article_url = f'http://127.0.0.1:10000/api/knowledge/articles/{article_id}/'
     try:
-        response = requests.get(article_url, headers=headers, timeout=10)
-        if response.status_code == 200:
-            article = response.json()
-            return render(request, 'web/knowledge_detail.html', {'article': article})
-    except requests.exceptions.RequestException as exc:
+        from apps.knowledge.models import Article
+        article = Article.objects.get(pk=article_id)
+        return render(request, 'web/knowledge_detail.html', {'article': article})
+    except ObjectDoesNotExist:
+        messages.error(request, 'Requested article was not found.')
+        return redirect('knowledge_hub')
+    except Exception as exc:
         logger.error("Knowledge detail fetch failed for article %s: %s", article_id, exc)
-    return redirect('knowledge_hub')
+        return redirect('knowledge_hub')

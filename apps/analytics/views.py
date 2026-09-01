@@ -100,13 +100,20 @@ def dashboard_stats(request):
 
 
 def dashboard_page(request):
-    """Render the analytics dashboard page for authorized users.
-
-    Uses session-based auth check instead of @login_required so the
-    redirect goes to /login/ (our custom login) not /accounts/login/.
-    """
+    """Render the analytics dashboard page for authorized users."""
     if not request.session.get('access_token'):
         return redirect('login')
-    if not hasattr(request.user, 'role') or request.user.role not in ['partner', 'admin']:
+
+    user = request.user if hasattr(request, 'user') and request.user.is_authenticated else None
+    if not user:
+        username = request.session.get('user')
+        if username:
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                user = None
+
+    if not user or user.role not in ['partner', 'admin']:
         return redirect('home')
+
     return render(request, 'analytics/dashboard.html', {'token': request.session.get('access_token')})
