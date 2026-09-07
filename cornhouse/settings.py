@@ -26,17 +26,38 @@ DEBUG = os.getenv('DEBUG', 'False').lower() in {'1', 'true', 'yes', 'on'}
 # Render and other reverse proxies pass traffic through HTTPS. Accept a comma-separated
 # list of hosts from env, or fall back to '*' for local development.
 _allowed_hosts = os.getenv('ALLOWED_HOSTS', '*')
-ALLOWED_HOSTS = ['*'] if _allowed_hosts == '*' else [host.strip() for host in _allowed_hosts.split(',') if host.strip()]
+if _allowed_hosts == '*':
+    ALLOWED_HOSTS = ['*']
+else:
+    ALLOWED_HOSTS = [host.strip() for host in _allowed_hosts.split(',') if host.strip()]
+
+# Support Render automatic external hostname if provided
+RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS and '*' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 # Render terminates TLS at the edge and forwards plain HTTP internally.
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 
-# Trust common Render domains when provided via ALLOWED_HOSTS.
-if not DEBUG and _allowed_hosts != '*':
-    csrf_hosts = [f'https://{host}' for host in ALLOWED_HOSTS if host not in {'localhost', '127.0.0.1', '0.0.0.0'}]
-    CSRF_TRUSTED_ORIGINS = csrf_hosts + ['https://localhost', 'http://localhost']
+# Build CSRF_TRUSTED_ORIGINS dynamically for production and Render
+_csrf_origins = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+if _csrf_origins:
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in _csrf_origins.split(',') if origin.strip()]
+else:
+    CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com', 'http://localhost', 'https://localhost']
+
+if RENDER_EXTERNAL_HOSTNAME:
+    render_origin = f'https://{RENDER_EXTERNAL_HOSTNAME}'
+    if render_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(render_origin)
+
+for host in ALLOWED_HOSTS:
+    if host != '*':
+        origin = f'https://{host}'
+        if origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(origin)
 
 # Application definition
 INSTALLED_APPS = [
@@ -62,8 +83,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'django.middleware.gzip.GZipMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'django.middleware.gzip.GZipMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -95,7 +116,14 @@ WSGI_APPLICATION = 'cornhouse.wsgi.application'
 # Database - production uses DATABASE_URL; local dev falls back to SQLite
 _db_url = os.getenv('DATABASE_URL')
 if _db_url:
-    DATABASES = {'default': dj_database_url.config(default=_db_url)}
+    # Render Postgres requires explicit SSL for secure connections. Normalise the URL
+    # to avoid stale `postgres://` values and missing `sslmode=require`.
+    if _db_url.startswith('postgres://') and 'postgresql://' not in _db_url:
+        _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+    if 'sslmode=' not in _db_url:
+        separator = '&' if '?' in _db_url else '?'
+        _db_url = f"{_db_url}{separator}sslmode=require"
+    DATABASES = {'default': dj_database_url.parse(_db_url, conn_max_age=600)}
 else:
     DATABASES = {
         'default': {

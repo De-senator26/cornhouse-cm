@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 def home(request):
     """Render the CornHouse home page with recent user feedback & testimonials."""
     try:
-        public_reviews = UserFeedback.objects.filter(is_public=True)[:6]
+        public_reviews = list(UserFeedback.objects.filter(is_public=True)[:6])
         stats = UserFeedback.objects.filter(is_public=True).aggregate(
             avg_rating=Avg('rating'),
             total_count=Count('id')
@@ -34,6 +34,7 @@ def home(request):
         'avg_rating': avg_rating,
         'total_reviews': total_count,
     })
+
 
 
 def submit_feedback(request):
