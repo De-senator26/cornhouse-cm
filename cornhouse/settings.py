@@ -23,35 +23,43 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False').lower() in {'1', 'true', 'yes', 'on'}
 
-# Render and other reverse proxies pass traffic through HTTPS. Accept a comma-separated
-# list of hosts from env, or fall back to '*' for local development.
+# Render, Koyeb and other reverse proxies pass traffic through HTTPS.
 _allowed_hosts = os.getenv('ALLOWED_HOSTS', '*')
 if _allowed_hosts == '*':
     ALLOWED_HOSTS = ['*']
 else:
     ALLOWED_HOSTS = [host.strip() for host in _allowed_hosts.split(',') if host.strip()]
 
-# Support Render automatic external hostname if provided
+# Support Render & Koyeb automatic external hostnames if provided
 RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS and '*' not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-# Render terminates TLS at the edge and forwards plain HTTP internally.
+KOYEB_PUBLIC_DOMAIN = os.getenv('KOYEB_PUBLIC_DOMAIN')
+if KOYEB_PUBLIC_DOMAIN and KOYEB_PUBLIC_DOMAIN not in ALLOWED_HOSTS and '*' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(KOYEB_PUBLIC_DOMAIN)
+
+# Reverse proxy SSL headers
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 
-# Build CSRF_TRUSTED_ORIGINS dynamically for production and Render
+# Build CSRF_TRUSTED_ORIGINS dynamically for production, Render, Koyeb
 _csrf_origins = os.getenv('CSRF_TRUSTED_ORIGINS', '')
 if _csrf_origins:
     CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in _csrf_origins.split(',') if origin.strip()]
 else:
-    CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com', 'http://localhost', 'https://localhost']
+    CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com', 'https://*.koyeb.app', 'http://localhost', 'https://localhost']
 
 if RENDER_EXTERNAL_HOSTNAME:
     render_origin = f'https://{RENDER_EXTERNAL_HOSTNAME}'
     if render_origin not in CSRF_TRUSTED_ORIGINS:
         CSRF_TRUSTED_ORIGINS.append(render_origin)
+
+if KOYEB_PUBLIC_DOMAIN:
+    koyeb_origin = f'https://{KOYEB_PUBLIC_DOMAIN}'
+    if koyeb_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(koyeb_origin)
 
 for host in ALLOWED_HOSTS:
     if host != '*':
