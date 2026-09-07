@@ -116,13 +116,14 @@ WSGI_APPLICATION = 'cornhouse.wsgi.application'
 # Database - production uses DATABASE_URL; local dev falls back to SQLite
 _db_url = os.getenv('DATABASE_URL')
 if _db_url:
-    # Render Postgres requires explicit SSL for secure connections. Normalise the URL
-    # to avoid stale `postgres://` values and missing `sslmode=require`.
+    # Normalise legacy postgres:// scheme (psycopg2 requires postgresql://).
     if _db_url.startswith('postgres://') and 'postgresql://' not in _db_url:
         _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+    # Use sslmode=prefer: attempts SSL but falls back gracefully if the server
+    # drops the SSL handshake during warm-up (common on Render internal networks).
     if 'sslmode=' not in _db_url:
         separator = '&' if '?' in _db_url else '?'
-        _db_url = f"{_db_url}{separator}sslmode=require"
+        _db_url = f"{_db_url}{separator}sslmode=prefer"
     DATABASES = {'default': dj_database_url.parse(_db_url, conn_max_age=600)}
 else:
     DATABASES = {
